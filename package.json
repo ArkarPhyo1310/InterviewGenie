@@ -17,6 +17,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "firebase": "^11.6.1",
+    "firebase-admin": "^13.3.0",
     "form": "^0.2.5",
     "input": "^1.0.1",
     "lucide-react": "^0.503.0",
