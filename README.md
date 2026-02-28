@@ -13,7 +13,7 @@ AI-powered mock interview platform with real-time voice practice and instant fee
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS
-- **UI Components**: shadcn/ui, Radix UI
+- **UI Components**: shadcn/ui
 - **AI/Voice**: Vapi (voice AI), Google AI (Gemini for feedback)
 - **Database**: Firebase (Firestore)
 - **Authentication**: Firebase Auth
