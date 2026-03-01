@@ -22,8 +22,10 @@ interface SavedMessage {
 const Agent = ({
   userName,
   userId,
+  userPic,
   type,
   interviewId,
+  feedbackId,
   questions,
 }: AgentProps) => {
   const router = useRouter();
@@ -38,7 +40,10 @@ const Agent = ({
 
     const onMessage = (message: Message) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
-        const newMessage = { role: message.role, content: message.transcript };
+        const newMessage = {
+          role: message.role,
+          content: message.transcript,
+        };
         setMessages((prev) => [...prev, newMessage]);
       }
     };
@@ -106,9 +111,7 @@ const Agent = ({
     } else {
       let formattedQuestions = "";
       if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
+        formattedQuestions = questions.map((question) => `- ${question}`).join("\n");
       }
 
       await vapi.start(interviewer, {
@@ -147,7 +150,7 @@ const Agent = ({
         <div className="card-border">
           <div className="card-content">
             <Image
-              src="/user-avatar.png"
+              src={userPic || "/user-avatar.png"}
               alt="user-avatar"
               width={540}
               height={540}
@@ -164,7 +167,7 @@ const Agent = ({
               key={lastMessage}
               className={cn(
                 "transition-opacity duration-500 opacity-0",
-                "animate-fadeIn opacity-100"
+                "animate-fadeIn opacity-100",
               )}
             >
               {lastMessage}
@@ -178,7 +181,7 @@ const Agent = ({
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
-                callStatus !== "CONNECTING" && "hidden"
+                callStatus !== "CONNECTING" && "hidden",
               )}
             />
             <span>{isCallInactiveOrFinished ? "Call" : ". . ."}</span>

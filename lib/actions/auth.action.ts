@@ -1,124 +1,166 @@
-'use server';
+"use server";
 
-import { auth, db } from "@/firebase/admin";
+// Supabase server client handles auth & session cookies automatically
+import { createClient } from "@/supabase/server";
 import { cookies } from "next/headers";
 
-const ONE_WEEK = 60 * 60 * 24 * 7;
+// The helper above returns a supabase client that will read & write
+// the appropriate auth cookies when used from server components or
+// server actions.
 
-export async function signUp(params: SignUpParams) {
-    const { uid, name, email } = params;
+export async function signUp(params: SignUpParams): Promise<SignUpResult> {
+  const { name, email, password, profileURL, createdAt } = params;
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
 
-    try {
-        const userRecord = await db.collection('users').doc(uid).get();
+  try {
+    // create user via supabase auth
+    const {
+      data: { user, session },
+      error: authError,
+    } = await supabase.auth.signUp({ email, password });
 
-        if (userRecord.exists) {
-            return {
-                success: false,
-                message: "User already exists. Please sign in instead."
-            }
-        }
-
-        await db.collection('users').doc(uid).set({
-            name, email
-        })
-
-        return {
-            success: true,
-            message: "Account created successfully! Please sign in."
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-        console.error("Error creating user:", error);
-
-        if (error.code === 'auth/email-already-exists') {
-            return {
-                success: false,
-                message: "This email is already in use."
-            }
-        }
-
-        return {
-            success: false,
-            message: "Failed to create an account."
-        }
+    if (authError) {
+      console.error("Supabase auth signUp error:", authError);
+      return {
+        success: false,
+        message: authError.message || "Failed to create account. Please try again.",
+      };
     }
+
+    if (!user || !user.id) {
+      return {
+        success: false,
+        message: "Unable to create user. Please try again.",
+      };
+    }
+
+    const uid = user.id;
+
+    // insert the additional profile information into users table
+    const { error: dbError } = await supabase.from("users").insert({
+      id: uid,
+      name,
+      email,
+      profile_url: profileURL,
+      created_at: createdAt ? createdAt.toISOString() : new Date().toISOString(),
+    });
+
+    if (dbError) {
+      console.error("Supabase insert user error:", dbError);
+      // if insertion fails, delete auth user to avoid orphaned account
+      await supabase.auth.admin.deleteUser(uid);
+      return {
+        success: false,
+        message: "Failed to create user profile. Please try again.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Account created successfully. Please sign in.",
+      userId: uid,
+    } as { success: boolean; message: string; userId?: string };
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return {
+      success: false,
+      message: "Failed to create account. Please try again.",
+    };
+  }
 }
 
 export async function signIn(params: SignInParams) {
-    const { email, idToken } = params;
-    try {
-        const userRecord = await auth.getUserByEmail(email);
+  const { email, password } = params;
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
 
-        if (!userRecord) {
-            return {
-                success: false,
-                message: "User not found. Please create an account instead."
-            }
-        }
+  try {
+    const {
+      data: { user, session },
+      error,
+    } = await supabase.auth.signInWithPassword({ email, password });
 
-        await setSessionToken(idToken);
-
-        return {
-            success: true,
-            message: "Sign in successfully!"
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-        console.error("Error signing in:", error);
-
-        return {
-            success: false,
-            message: "Failed to sign in."
-        }
+    if (error || !session) {
+      console.error("Supabase auth signIn error:", error);
+      return {
+        success: false,
+        message: (error && error.message) || "Failed to log into account. Please try again.",
+      };
     }
+
+    return { success: true, message: "Signed in successfully." };
+  } catch (error) {
+    console.error("Error signing in user:", error);
+
+    return {
+      success: false,
+      message: "Failed to log into account. Please try again.",
+    };
+  }
 }
 
-export async function setSessionToken(idToken: string) {
-    const cookieStore = await cookies();
-    const sessionCookie = await auth.createSessionCookie(idToken, {
-        expiresIn: ONE_WEEK * 1000,
-    })
-
-    cookieStore.set("session", sessionCookie, {
-        maxAge: ONE_WEEK,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        sameSite: "lax",
-    })
+// Sign out user by calling supabase and letting it clear cookies
+export async function signOut() {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+  await supabase.auth.signOut();
 }
 
+// Get current user from supabase session
 export async function getCurrentUser(): Promise<User | null> {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("session")?.value;
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
 
-    if (!sessionCookie) {
-        return null;
-    }
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    try {
-        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    if (error || !user) return null;
 
-        if (!decodedClaims) return null;
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
-        const userRecord = await db.collection("users").doc(decodedClaims.uid).get();
+    if (profileError || !profile) return null;
 
-        if (!userRecord.exists) return null;
-
-        return {
-            ...userRecord.data(),
-            id: userRecord.id,
-        } as User;
-    } catch (error) {
-        console.error("Error getting current user:", error);
-        return null;
-    }
+    return {
+      id: user.id,
+      name: profile.name,
+      email: profile.email,
+      pic: profile.profile_url,
+    } as User;
+  } catch (error) {
+    console.error("Error getting current user:", error);
+    return null;
+  }
 }
 
-export async function isAuthenticated() {
-    const user = await getCurrentUser();
+// helper to update profile URLs after sign up or when needed
+export async function updateUserMedia(params: UpdateUserMediaParams) {
+  const { userId, profileURL } = params;
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
 
-    return !!user;
+  const { error } = await supabase
+    .from("users")
+    .update({ profile_url: profileURL })
+    .eq("id", userId);
+
+  if (error) {
+    console.error("Failed to update user media URLs", error);
+    return { success: false, message: "Unable to update profile information." };
+  }
+
+  return { success: true };
+}
+
+// Check if user is authenticated
+export async function isAuthenticated() {
+  const user = await getCurrentUser();
+  return !!user;
 }

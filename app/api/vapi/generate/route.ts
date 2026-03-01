@@ -1,19 +1,18 @@
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
-import { getRandomInterviewCover } from "@/lib/utils";
 import { db } from "@/firebase/admin";
+import { getRandomInterviewCover } from "@/lib/utils";
+import { generateText } from "ai";
 
 export async function GET() {
-    return Response.json({ success: true, data: 'Thank You!' }, { status: 200 });
+  return Response.json({ success: true, data: "Thank You!" }, { status: 200 });
 }
 
 export async function POST(request: Request) {
-    const { type, role, level, techstack, amount, userid } = await request.json();
+  const { type, role, level, techstack, amount, userid } = await request.json();
 
-    try {
-        const { text: questions } = await generateText({
-            model: google('gemini-2.5-flash-preview-04-17'),
-            prompt: `Prepare questions for a job interview.
+  try {
+    const { text: questions } = await generateText({
+      model: "google/gemini-2.5-flash",
+      prompt: `Prepare questions for a job interview.
             The job role is ${role}.
             The job experience level is ${level}.
             The tech stack used in the job is ${techstack}.
@@ -25,22 +24,24 @@ export async function POST(request: Request) {
             The questions should be in the following format:
             ["Question 1", "Question 2", "Question 3", ...]
             `,
-        });
+    });
 
-        const interview = {
-            role, type, level,
-            techstack: techstack.split(","),
-            questions: JSON.parse(questions),
-            userId: userid,
-            finalized: true,
-            coverImage: getRandomInterviewCover(),
-            createdAt: new Date().toISOString()
-        };
+    const interview = {
+      role,
+      type,
+      level,
+      techstack: techstack.split(","),
+      questions: JSON.parse(questions),
+      userId: userid,
+      finalized: true,
+      coverImage: getRandomInterviewCover(),
+      createdAt: new Date().toISOString(),
+    };
 
-        await db.collection("interviews").add(interview);
+    await db.collection("interviews").add(interview);
 
-        return Response.json({ success: true }, { status: 200 })
-    } catch (error) {
-        return Response.json({ success: false, error }, { status: 500 })
-    }
+    return Response.json({ success: true }, { status: 200 });
+  } catch (error) {
+    return Response.json({ success: false, error }, { status: 500 });
+  }
 }
