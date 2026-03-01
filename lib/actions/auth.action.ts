@@ -16,7 +16,7 @@ export async function signUp(params: SignUpParams): Promise<SignUpResult> {
   try {
     // create user via supabase auth
     const {
-      data: { user, session },
+      data: { user },
       error: authError,
     } = await supabase.auth.signUp({ email, password });
 
@@ -77,7 +77,7 @@ export async function signIn(params: SignInParams) {
 
   try {
     const {
-      data: { user, session },
+      data: { session },
       error,
     } = await supabase.auth.signInWithPassword({ email, password });
 

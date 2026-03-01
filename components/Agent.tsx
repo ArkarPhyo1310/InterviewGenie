@@ -19,15 +19,7 @@ interface SavedMessage {
   content: string;
 }
 
-const Agent = ({
-  userName,
-  userId,
-  userPic,
-  type,
-  interviewId,
-  feedbackId,
-  questions,
-}: AgentProps) => {
+const Agent = ({ userName, userId, userPic, type, interviewId, questions }: AgentProps) => {
   const router = useRouter();
 
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -70,7 +62,7 @@ const Agent = ({
     };
   }, []);
 
-  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+  const handleGenerateFeedback = async () => {
     console.log("Generate Feedback here.");
     const { success, id } = {
       success: true,

@@ -1,12 +1,18 @@
-import { db } from "@/firebase/admin";
+"use server";
+
 import { getRandomInterviewCover } from "@/lib/utils";
 import { generateText } from "ai";
+import { createClient } from "@/supabase/server";
+import { cookies } from "next/headers";
 
 export async function GET() {
   return Response.json({ success: true, data: "Thank You!" }, { status: 200 });
 }
 
 export async function POST(request: Request) {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+
   const { type, role, level, techstack, amount, userid } = await request.json();
 
   try {
@@ -38,7 +44,15 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    await db.collection("interviews").add(interview);
+    const { error } = await supabase.from("interviews").insert(interview);
+
+    if (error) {
+      console.error("Failed to insert interview:", error);
+      return Response.json(
+        { success: false, error: "Failed to save interview. Error: " + error.message },
+        { status: 500 },
+      );
+    }
 
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {
