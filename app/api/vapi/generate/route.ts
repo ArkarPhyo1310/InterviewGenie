@@ -1,8 +1,8 @@
-"use server";
-
+import { getCurrentUser } from "@/lib/actions/auth.action";
 import { getRandomInterviewCover } from "@/lib/utils";
-import { generateText } from "ai";
 import { createClient } from "@/supabase/server";
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
 import { cookies } from "next/headers";
 
 export async function GET() {
@@ -10,14 +10,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
-  const { type, role, level, techstack, amount, userid } = await request.json();
+  const user = await getCurrentUser();
+
+  const { type, role, level, techstack, amount } = await request.json();
 
   try {
     const { text: questions } = await generateText({
-      model: "google/gemini-2.5-flash",
+      model: google("gemini-2.5-flash"),
       prompt: `Prepare questions for a job interview.
             The job role is ${role}.
             The job experience level is ${level}.
@@ -38,10 +40,10 @@ export async function POST(request: Request) {
       level,
       techstack: techstack.split(","),
       questions: JSON.parse(questions),
-      userId: userid,
+      user_id: user?.id,
       finalized: true,
-      coverImage: getRandomInterviewCover(),
-      createdAt: new Date().toISOString(),
+      cover_image: getRandomInterviewCover(),
+      created_at: new Date().toISOString(),
     };
 
     const { error } = await supabase.from("interviews").insert(interview);

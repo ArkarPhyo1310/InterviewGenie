@@ -1,17 +1,17 @@
 interface Feedback {
   id: string;
-  interviewId: string;
-  userId: string;
-  totalScore: number;
-  categoryScores: Array<{
+  interview_id: string;
+  user_id: string;
+  total_score: number;
+  category_scores: Array<{
     name: string;
     score: number;
     comment: string;
   }>;
   strengths: string[];
-  areasForImprovement: string[];
-  finalAssessment: string;
-  createdAt: string;
+  areas_for_improvement: string[];
+  final_assessment: string;
+  created_at: string;
 }
 
 interface Interview {
@@ -20,17 +20,18 @@ interface Interview {
   level: string;
   questions: string[];
   techstack: string[];
-  createdAt: string;
-  userId: string;
+  created_at: string;
+  user_id: string;
+  cover_image: string;
   type: string;
   finalized: boolean;
 }
 
 interface CreateFeedbackParams {
-  interviewId: string;
-  userId: string;
+  interview_id: string;
+  user_id: string;
   transcript: { role: string; content: string }[];
-  feedbackId?: string;
+  feedback_id?: string;
 }
 
 interface User {
@@ -42,11 +43,12 @@ interface User {
 
 interface InterviewCardProps {
   id?: string;
-  userId?: string;
+  user_id?: string;
   role: string;
   type: string;
+  cover_image?: string;
   techstack: string[];
-  createdAt?: string;
+  created_at?: string;
 }
 
 interface AgentProps {

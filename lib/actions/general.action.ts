@@ -2,13 +2,14 @@
 
 import { feedbackSchema } from "@/constants";
 import { createClient } from "@/supabase/server";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { cookies } from "next/headers";
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
   try {
     const formattedTranscript = transcript
@@ -19,7 +20,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       .join("");
 
     const { output } = await generateText({
-      model: "google/gemini-2.5-flash",
+      model: google("gemini-2.5-flash"),
       output: feedbackSchema,
       prompt: `
         You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
@@ -88,8 +89,8 @@ export async function getFeedbackByInterviewId(
   const { data, error } = await supabase
     .from("feedback")
     .select("*")
-    .eq("interviewId", interviewId)
-    .eq("userId", userId)
+    .eq("interview_id", interviewId)
+    .eq("user_id", userId)
     .limit(1)
     .single();
 
@@ -107,9 +108,9 @@ export async function getLatestInterviews(
   const { data, error } = await supabase
     .from("interviews")
     .select("*")
-    .neq("userId", userId)
+    .neq("user_id", userId)
     .eq("finalized", true)
-    .order("createdAt", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error || !data) return null;
@@ -123,8 +124,8 @@ export async function getInterviewsByUserId(userId: string): Promise<Interview[]
   const { data, error } = await supabase
     .from("interviews")
     .select("*")
-    .eq("userId", userId)
-    .order("createdAt", { ascending: false });
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
   if (error || !data) return null;
   return data as Interview[];

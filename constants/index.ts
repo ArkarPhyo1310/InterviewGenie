@@ -214,18 +214,17 @@ export const feedbackSchema = Output.object({
 });
 
 export const interviewCovers = [
-  "/adobe.png",
-  "/amazon.png",
-  "/facebook.png",
-  "/hostinger.png",
-  "/pinterest.png",
-  "/quora.png",
-  "/reddit.png",
-  "/skype.png",
-  "/spotify.png",
-  "/telegram.png",
-  "/tiktok.png",
-  "/yahoo.png",
+  "google.com",
+  "amazon.com",
+  "microsoft.com",
+  "meta.com",
+  "netflix.com",
+  "apple.com",
+  "airbnb.com",
+  "stripe.com",
+  "uber.com",
+  "shopify.com",
+  "openai.com",
 ];
 
 export const dummyInterviews: Interview[] = [
