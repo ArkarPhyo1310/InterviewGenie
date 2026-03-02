@@ -4,12 +4,12 @@ import { feedbackSchema } from "@/constants";
 import { createClient } from "@/supabase/server";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { cookies } from "next/headers";
 
 export async function createFeedback(params: CreateFeedbackParams) {
-  const { interviewId, userId, transcript, feedbackId } = params;
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const { interview_id, user_id, transcript, feedback_id } = params;
+  const supabase = await createClient();
+
+  console.log("Creating feedback with params:", { interview_id, user_id, transcript, feedback_id });
 
   try {
     const formattedTranscript = transcript
@@ -39,39 +39,38 @@ export async function createFeedback(params: CreateFeedbackParams) {
     });
 
     const feedback: Omit<Feedback, "id"> = {
-      interviewId,
-      userId,
-      totalScore: output.totalScore,
-      categoryScores: output.categoryScores,
-      strengths: output.strengths,
-      areasForImprovement: output.areasForImprovement,
-      finalAssessment: output.finalAssessment,
-      createdAt: new Date().toISOString(),
+      interview_id,
+      user_id,
+      total_score: output.totalScore,
+      category_scores: output.categoryScores,
+      strengths: output.strengths.split(",").map((s) => s.trim()),
+      areas_for_improvement: output.areasForImprovement.split(",").map((s) => s.trim()),
+      final_assessment: output.finalAssessment,
+      created_at: new Date().toISOString(),
     };
 
     let res;
-    if (feedbackId) {
-      res = await supabase.from("feedback").update(feedback).eq("id", feedbackId);
+    if (feedback_id) {
+      res = await supabase.from("feedback").update(feedback).eq("id", feedback_id);
     } else {
       res = await supabase.from("feedback").insert(feedback).select();
     }
 
     if (res.error) {
       console.error("Error saving feedback:", res.error);
-      return { success: false };
+      return { success: false, feedbackId: null };
     }
 
-    const id = feedbackId || res.data?.[0]?.id;
+    const id = feedback_id || res.data?.[0]?.id;
     return { success: true, feedbackId: id };
   } catch (error) {
     console.error("Error saving feedback:", error);
-    return { success: false };
+    return { success: false, feedbackId: null };
   }
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data, error } = await supabase.from("interviews").select("*").eq("id", id).single();
 
@@ -83,8 +82,7 @@ export async function getFeedbackByInterviewId(
   params: GetFeedbackByInterviewIdParams,
 ): Promise<Feedback | null> {
   const { interviewId, userId } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("feedback")
@@ -102,8 +100,7 @@ export async function getLatestInterviews(
   params: GetLatestInterviewsParams,
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("interviews")
@@ -118,8 +115,7 @@ export async function getLatestInterviews(
 }
 
 export async function getInterviewsByUserId(userId: string): Promise<Interview[] | null> {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("interviews")

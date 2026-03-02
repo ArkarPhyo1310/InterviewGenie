@@ -1,6 +1,7 @@
 "use client";
 
 import { interviewer } from "@/constants";
+import { createFeedback } from "@/lib/actions/general.action";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import Image from "next/image";
@@ -62,15 +63,19 @@ const Agent = ({ userName, userId, userPic, type, interviewId, questions }: Agen
     };
   }, []);
 
-  const handleGenerateFeedback = async () => {
+  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
     console.log("Generate Feedback here.");
-    const { success, id } = {
-      success: true,
-      id: "feedback-id",
-    };
 
-    // TODO
+    const { success, feedbackId: id } = await createFeedback({
+      interview_id: interviewId!,
+      user_id: userId!,
+      transcript: messages,
+    });
+
+    console.log("Feedback creation result:", { success, id });
+
     if (success && id) {
+      console.log("Feedback saved successfully with ID:", id);
       router.push(`/interview/${interviewId}/feedback`);
     } else {
       console.error("Error saving feedback");
@@ -94,12 +99,7 @@ const Agent = ({ userName, userId, userPic, type, interviewId, questions }: Agen
     setCallStatus(CallStatus.CONNECTING);
 
     if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
+      await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!);
     } else {
       let formattedQuestions = "";
       if (questions) {

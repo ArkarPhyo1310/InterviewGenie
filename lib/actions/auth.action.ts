@@ -2,7 +2,6 @@
 
 // Supabase server client handles auth & session cookies automatically
 import { createClient } from "@/supabase/server";
-import { cookies } from "next/headers";
 
 // The helper above returns a supabase client that will read & write
 // the appropriate auth cookies when used from server components or
@@ -10,8 +9,7 @@ import { cookies } from "next/headers";
 
 export async function signUp(params: SignUpParams): Promise<SignUpResult> {
   const { name, email, password, profileURL, createdAt } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     // create user via supabase auth
@@ -72,8 +70,7 @@ export async function signUp(params: SignUpParams): Promise<SignUpResult> {
 
 export async function signIn(params: SignInParams) {
   const { email, password } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     const {
@@ -102,15 +99,13 @@ export async function signIn(params: SignInParams) {
 
 // Sign out user by calling supabase and letting it clear cookies
 export async function signOut() {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
   await supabase.auth.signOut();
 }
 
 // Get current user from supabase session
 export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     const {
@@ -143,8 +138,7 @@ export async function getCurrentUser(): Promise<User | null> {
 // helper to update profile URLs after sign up or when needed
 export async function updateUserMedia(params: UpdateUserMediaParams) {
   const { userId, profileURL } = params;
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("users")

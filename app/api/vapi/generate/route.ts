@@ -3,15 +3,13 @@ import { getRandomInterviewCover } from "@/lib/utils";
 import { createClient } from "@/supabase/server";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { cookies } from "next/headers";
 
 export async function GET() {
   return Response.json({ success: true, data: "Thank You!" }, { status: 200 });
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const user = await getCurrentUser();
 

@@ -1,27 +1,29 @@
-import React from "react";
+import { Button } from "@/components/ui/button";
+import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
+import { getRandomInterviewCover } from "@/lib/utils";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { getRandomInterviewCover } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import DisplayTechIcons from "./DisplayTechIcons";
 
-const InterviewCard = ({
+const InterviewCard = async ({
   id,
   role,
   type,
+  user_id,
   techstack,
   cover_image,
   created_at,
 }: InterviewCardProps) => {
-  const feedback = null as Feedback | null;
+  const feedback =
+    user_id && id ? await getFeedbackByInterviewId({ interviewId: id, userId: user_id }) : null;
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
   const formattedDate = dayjs(feedback?.created_at || created_at || Date.now()).format(
     "MMM D, YYYY",
   );
 
   return (
-    <div className="card-border w-[360px] max-sm:w-full min-h-96">
+    <div className="card-border w-90 max-sm:w-full min-h-96">
       <div className="card-interview">
         <div>
           <div className="absolute top-0 right-0 w-fit px-4 py-2 rounded-bl-lg bg-light-600">
@@ -32,7 +34,7 @@ const InterviewCard = ({
             alt="cover-image"
             width={90}
             height={90}
-            className="rounded-full object-fit size-[90px]"
+            className="rounded-full object-fit size-22.5"
           ></Image>
 
           <h3 className="mt-5 capitalize">{role} Interview</h3>
